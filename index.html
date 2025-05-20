@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Cliente WebSocket</title>
+    <style>
+        #chat {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            background-color: #f9f9f9;
+        }
+
+        #mensaje {
+            width: 80%;
+            padding: 8px;
+        }
+
+        #btnEnviar {
+            padding: 8px 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Cliente WebSocket</h1>
+    <div id="chat"></div>
+    <input type="text" id="mensaje" placeholder="Escribe tu mensaje" disabled />
+    <button id="btnEnviar" onclick="enviarMensaje()" disabled>Enviar</button>
+
+    <script>
+        const chat = document.getElementById("chat");
+        const input = document.getElementById("mensaje");
+        const btnEnviar = document.getElementById("btnEnviar");
+        let ws;
+
+        function conectar() {
+            ws = new WebSocket("ws://localhost:8765");
+
+            ws.onopen = () => {
+                log("✅ Conectado al servidor WebSocket.");
+                btnEnviar.disabled = false;
+                input.disabled = false;
+                input.focus();
+            };
+
+            ws.onmessage = (event) => {
+                log("📩 " + event.data);
+            };
+
+            ws.onclose = () => {
+                log("❌ Conexión cerrada.");
+                btnEnviar.disabled = true;
+                input.disabled = true;
+            };
+
+            ws.onerror = (error) => {
+                log("⚠️ Error en la conexión WebSocket.");
+                console.error("WebSocket error:", error);
+            };
+        }
+
+        function enviarMensaje() {
+            const mensaje = input.value.trim();
+            if (!mensaje) return; // No enviar mensajes vacíos
+
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(mensaje);
+                log("📤 " + mensaje);
+                input.value = "";
+                input.focus();
+            } else {
+                alert("La conexión WebSocket no está abierta.");
+            }
+        }
+
+        function log(mensaje) {
+            chat.innerHTML += mensaje + "<br>";
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Iniciar conexión al cargar la página
+        window.addEventListener('load', conectar);
+    </script>
+</body>
+
+</html>

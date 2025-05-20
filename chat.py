@@ -2,6 +2,8 @@ import socket
 import threading
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
+import asyncio
+from websockets.asyncio.server import serve
 
 clientes = []
 
@@ -27,7 +29,7 @@ class ServidorChat:
         self.server_socket.bind(('localhost', 12345))
         self.server_socket.listen(5)
 
-        self.escribir_en_historial("Servidor escuchando en puerto 12345...")
+        self.escribir_en_historial("Servidor TCP escuchando en puerto 12345...")
 
         threading.Thread(target=self.aceptar_clientes, daemon=True).start()
 
@@ -35,7 +37,7 @@ class ServidorChat:
         while True:
             cliente_socket, addr = self.server_socket.accept()
             clientes.append(cliente_socket)
-            self.escribir_en_historial(f"Cliente conectado desde {addr}")
+            self.escribir_en_historial(f"Cliente TCP conectado desde {addr}")
             threading.Thread(target=self.manejar_cliente, args=(cliente_socket,), daemon=True).start()
 
     def manejar_cliente(self, cliente_socket):
@@ -44,13 +46,13 @@ class ServidorChat:
                 data = cliente_socket.recv(1024).decode()
                 if not data:
                     break
-                self.escribir_en_historial(data)
+                self.escribir_en_historial(f"TCP: {data}")
                 self.reenviar_a_todos(data, cliente_socket)
             except:
                 break
         cliente_socket.close()
         clientes.remove(cliente_socket)
-        self.escribir_en_historial("Un cliente se ha desconectado.")
+        self.escribir_en_historial("Un cliente TCP se ha desconectado.")
 
     def reenviar_a_todos(self, mensaje, origen):
         for cliente in clientes:
@@ -73,12 +75,33 @@ class ServidorChat:
             self.entrada_mensaje.delete(0, tk.END)
 
     def escribir_en_historial(self, mensaje):
-        self.historial.config(state='normal')
-        self.historial.insert(tk.END, mensaje + "\n")
-        self.historial.config(state='disabled')
-        self.historial.yview(tk.END)
+        # Para evitar problemas con hilos, usamos after para actualizar la GUI
+        def append():
+            self.historial.config(state='normal')
+            self.historial.insert(tk.END, mensaje + "\n")
+            self.historial.config(state='disabled')
+            self.historial.yview(tk.END)
+        self.master.after(0, append)
+
+async def websocket_handler(websocket):
+    async for message in websocket:
+        print(f"WebSocket recibido: {message}")
+        await websocket.send(message)
+        print(f"WebSocket enviado: {message}")
+
+async def iniciar_servidor_websocket():
+    async with serve(websocket_handler, "localhost", 8765):
+        print("Servidor WebSocket en ejecución en ws://localhost:8765")
+        await asyncio.Future()  # run forever
+
+def iniciar_loop_asyncio():
+    asyncio.run(iniciar_servidor_websocket())
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = ServidorChat(root)
+
+    # Iniciar el servidor WebSocket en hilo aparte para no bloquear la GUI
+    threading.Thread(target=iniciar_loop_asyncio, daemon=True).start()
+
     root.mainloop()
