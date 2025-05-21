@@ -7,7 +7,7 @@ import websockets
 
 clientes_tcp = []
 clientes_ws = set()
-loop_asyncio = None  # Para guardar el loop asyncio principal
+loop_asyncio = None  
 
 class ServidorChat:
     def __init__(self, master):
@@ -51,7 +51,6 @@ class ServidorChat:
                 self.escribir_en_historial(f"TCP: {data}")
                 self.reenviar_a_todos(f"TCP: {data}", origen=cliente_socket)
             except Exception as e:
-                # Podrías loguear e si quieres: print("Error TCP:", e)
                 break
         cliente_socket.close()
         if cliente_socket in clientes_tcp:
@@ -59,7 +58,6 @@ class ServidorChat:
         self.escribir_en_historial("Cliente TCP desconectado.")
 
     def reenviar_a_todos(self, mensaje, origen=None):
-        # Reenviar a clientes TCP
         for cliente in clientes_tcp:
             try:
                 if cliente != origen:
@@ -67,7 +65,6 @@ class ServidorChat:
             except:
                 pass
 
-        # Reenviar a clientes WebSocket
         async def enviar_ws():
             for ws in list(clientes_ws):
                 try:
@@ -103,7 +100,6 @@ async def websocket_handler(websocket):
     try:
         async for mensaje in websocket:
             app.escribir_en_historial(f"WebSocket: {mensaje}")
-            # Al reenviar, prefijo para que TCP también lo muestre con claridad
             app.reenviar_a_todos(f"WebSocket: {mensaje}", origen=websocket)
     except websockets.exceptions.ConnectionClosed:
         pass
@@ -114,7 +110,7 @@ async def websocket_handler(websocket):
 async def iniciar_servidor_websocket():
     async with websockets.serve(websocket_handler, "localhost", 8765):
         app.escribir_en_historial("Servidor WebSocket activo en ws://localhost:8765")
-        await asyncio.Future()  # Espera infinita para mantener activo
+        await asyncio.Future()  
 
 def iniciar_event_loop():
     global loop_asyncio
