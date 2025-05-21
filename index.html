@@ -118,7 +118,7 @@
   function enviar() {
     const mensaje = msgInput.value.trim();
     if (mensaje === "") return;
-    ws.send(mensaje);
+    ws.send(mensaje+"\n");
     agregarMensaje("Tú: " + mensaje);
     msgInput.value = "";
     msgInput.focus();
